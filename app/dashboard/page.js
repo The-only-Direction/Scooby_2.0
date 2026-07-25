@@ -2,6 +2,10 @@
 import {useState} from 'react';
 export default function Dashboard(){
     const [tab, setTab]=useState('dashboard');
+    const [name, setName]=useState('');
+    function addVendor(){
+        console.log('New Vendor:', name);
+    }
     return(
         <div style={{display: 'flex', minHeight: '100vh'}}> 
         <nav style={{width:'200px', background:'#1e293b', color:'white', padding:'1rem'}}>
@@ -12,7 +16,16 @@ export default function Dashboard(){
         </nav>
         <main style={{flex:1, padding:'2rem'}}>
             {tab=='dashboard'&& <h1>Dashboard</h1>}
-            {tab=='vendors'&& <h1>Vendors</h1>}
+            {tab=='vendors'&&(
+                <div>
+                    <h1>Vendors</h1>
+                    <input 
+                    value={name}
+                    onChange={(e)=> setName(e.target.value)}
+                    placeholder="Vendor Name"/>
+                    <button onClick={addVendor}>Add Vendor</button>
+                </div>
+            )}
             {tab=='handoff'&& <h1>Handoff</h1>}
         </main>
         </div>
