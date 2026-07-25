@@ -211,16 +211,139 @@ async function handleSubmit(e) {
 | `Response.json({...}, {...})` | Two **separate arguments** = two `{ }` with a comma *between*. Multiple keys in **one** object = commas *inside* one `{ }`. |
 | `'success': 'false'` (string) | In JS the string `'false'` is **truthy**! Use real booleans `true` / `false` (no quotes) for `if` checks. |
 | Blank page in browser | A code error crashes the render → blank page. Check the terminal running `npm run dev` for the red error + line number. |
+| Edited the wrong `page.js` | `page.js` exists in many folders. **Login = `app/page.js`**, **Dashboard = `app/dashboard/page.js`**. Always check the tab name before editing. |
+| Two `<main>` / multiple top elements | A component can `return` only **one** root element. Wrap siblings in a single `<div>` (or `<>...</>`). |
+| Single quotes on column names in SQL | Single quotes are for **string values** (`'admin'`), not column names. Column names are **bare** (`active`, not `'active'`). |
+| `default now()` on `last_login` | Don't — the login hasn't happened at row creation. Only use `default now()` when *creating the row IS the event* (`created_at`). |
+| Migration shows blank on `remote` | You forgot to type **`Y`** at the `db push` confirmation. Re-run `npx supabase db push` and confirm. |
+| Controlled input frozen (can't type) | `value={x}` with no `onChange` = read-only. Need **both** (see §5). |
+
+---
+
+## 8. More database — changing tables & relationships
+
+### Adding columns to an existing table (`ALTER TABLE`)
+You don't rebuild a table to change it — you write a migration that *alters* it:
+```sql
+alter table users
+add column active boolean default true,
+add column last_login timestamptz;
+```
+- Each new column needs its **own** `add` (you can't `add A, B`).
+- Column names are **bare** — no quotes.
+
+### Column defaults
+`default X` auto-fills a column when you don't provide a value:
+- `active boolean default true` → new vendors start active
+- `status text default 'pending'` → new assignments start pending
+- **The rule:** `default now()` only for timestamps where *creating the row IS the event* (`created_at`). For events that happen later (`last_login`), **no default** — leave it NULL until it happens.
+
+### Relationships & foreign keys (the big one)
+When one thing can have *many* of another (one vendor → many assignments), the "many" side gets its **own table** with a **foreign key** pointing back:
+```sql
+create table assignments (
+  id         bigint generated always as identity primary key,  -- this assignment's ID
+  vendor_id  bigint references users(id),                       -- WHICH vendor (foreign key)
+  link       text not null,
+  status     text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+```
+`references users(id)` = "this column must hold a real `id` from `users`." The database **enforces** the link.
+
+### Primary key vs foreign key — two different jobs
+| Column | Question it answers | Unique? |
+|--------|--------------------|---------|
+| `id` (primary key) | *Which* assignment is this? | Yes — never repeats |
+| `vendor_id` (foreign key) | *Whose* assignment is it? | No — repeats (a vendor has many) |
+
+### When to use `unique` — it's a design decision, not a default
+- `users.password` unique → **correct** (no two vendors should share a password)
+- `assignments.vendor_id` unique → **wrong** — it would let each vendor have only **one assignment ever**, killing history + performance tracking.
+- Business rule "one task *at a time*" ≠ "one task *ever*." Enforce "at a time" with `status`, not a unique key.
+
+### Foreign-key naming
+Name the column after **what it points to**: a column holding a vendor's id → `vendor_id`. (Not `assignment_id` — that name means "an assignment's id.")
+
+---
+
+## 9. More React / Next.js — navigation, loading data, lists
+
+### `useRouter` — redirecting in code
+```js
+import { useRouter } from 'next/navigation';
+const router = useRouter();          // inside the component
+router.push('/dashboard');           // send the browser to another page
+```
+Used after login succeeds to move the admin into the app.
+
+### `useEffect` — run code once, on page load
+```js
+useEffect(() => {
+  fetch('/api/users').then(r => r.json()).then(d => setUsers(d.users));
+}, []);
+```
+The component function *draws* the page — you can't fetch during drawing. `useEffect(fn, [])` says "after the page appears, run `fn` **once**." Perfect for loading data.
+
+### `.map()` — turn an array into UI
+```jsx
+{users.map(u => <tr key={u.id}><td>{u.name}</td></tr>)}
+```
+Loops an array → one element per item. `key={u.id}` gives each a unique id React needs to track them.
+
+### Conditional rendering — `{condition && <thing>}`
+```jsx
+{tab === 'vendors' && <h1>Vendors</h1>}
+```
+"If `tab` is `'vendors'`, show this." This is how the tab switching works — only the active tab's content renders.
+
+### One root element per component
+A component `return` can have only **one** top-level element. Multiple things → wrap in one `<div>`:
+```jsx
+return (<div> <h1>...</h1> <input/> <button/> </div>);
+```
+
+### API routes: GET vs POST
+- **GET** = *read* data (no body). `/api/users` GET → list all users.
+- **POST** = *send/write* data (has a body). `/api/login` POST, `/api/users` POST → add a vendor.
+- Insert a row: `await supabase.from('users').insert({ name, role: 'lead uploader', password })`
+- Generate a quick password in JS: `Math.random().toString(36).slice(-8)`
+
+---
+
+## 10. Git & GitHub — saving your work
+
+- **Git** = version control on your computer — saves snapshots ("commits") you can return to.
+- **GitHub** = the cloud copy of those snapshots (backup + shareable + needed for deployment).
+- The flow, run after something works:
+  ```bash
+  git add .                       # stage all changes
+  git commit -m "what changed"    # save a snapshot locally
+  git push                        # upload to GitHub
+  ```
+- **`.gitignore`** keeps secrets out — `.env.local` (your keys) and `node_modules` are never uploaded.
+- Commit **often** — small frequent saves beat one giant one. "WIP" in a message = work-in-progress (fine to commit unfinished work as a save point).
 
 ---
 
 ## Commands cheat-sheet
 
 ```bash
+# App
 npm run dev                         # start the app at http://localhost:3000
 npm install <package>               # add a library
 
+# Supabase (database)
 npx supabase migration new <name>   # create a blank migration
-npx supabase db push                # apply migrations to the cloud
-npx supabase migration list         # see local vs remote migration status
+npx supabase db push                # apply migrations to the cloud (type Y to confirm!)
+npx supabase migration list         # local vs remote migration status
+npx supabase projects api-keys --project-ref <ref> --reveal   # get your API keys
+
+# Peek at your data without the dashboard
+node --env-file=.env.local show_users.mjs   # print all users (incl. passwords)
+
+# Git / GitHub
+git add . && git commit -m "msg" && git push   # save + upload
+git status                          # what's changed
+git log --oneline                   # commit history
 ```

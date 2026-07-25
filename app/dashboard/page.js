@@ -3,8 +3,20 @@ import {useState} from 'react';
 export default function Dashboard(){
     const [tab, setTab]=useState('dashboard');
     const [name, setName]=useState('');
-    function addVendor(){
-        console.log('New Vendor:', name);
+    async function addVendor(){
+        const res=await fetch('/api/users',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({name}),
+        });
+        const result=await res.json();
+        if (result.success){
+            alert('Vendor added!');
+            setName('');
+        }
+        else{
+            alert('Error:'+result.error);
+        }
     }
     return(
         <div style={{display: 'flex', minHeight: '100vh'}}> 
