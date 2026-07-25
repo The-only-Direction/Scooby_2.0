@@ -1,8 +1,12 @@
 'use client';
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 export default function Dashboard(){
     const [tab, setTab]=useState('dashboard');
     const [name, setName]=useState('');
+    const [users, setUsers]=useState([]);
+    useEffect(()=>{
+        fetch('/api/users').then(r=>r.json()).then(d=>setUsers(d.users));},[]);
+
     async function addVendor(){
         const res=await fetch('/api/users',{
             method:'POST',
@@ -36,9 +40,26 @@ export default function Dashboard(){
                     onChange={(e)=> setName(e.target.value)}
                     placeholder="Vendor Name"/>
                     <button onClick={addVendor}>Add Vendor</button>
+                    <table border="1" cellPadding="8">
+            <thead>
+                <tr>
+                    <th>Name</th><th>Team</th><th>Role</th><th>Created At</th><th>Last Active</th><th>Work Pending</th><th>Performance</th>
+                </tr>
+                </thead>
+                <tbody>
+                {users.map(u=>(<tr key={u.id}><td>{u.name}</td>
+                <td>{u.team}</td><td>{u.role}</td>
+                <td>{new Date(u.created_at).toLocaleString()}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>New</td></tr>))}
+            </tbody>
+        </table>
                 </div>
             )}
             {tab=='handoff'&& <h1>Handoff</h1>}
+
+        
         </main>
         </div>
     );
