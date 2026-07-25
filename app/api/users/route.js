@@ -2,7 +2,10 @@ import {supabase} from '@/lib/supabase';
 export async function GET(request){
     const {data,error}=await supabase
     .from('users')
-    .select('id,name,team,role, created_at, last_login, active');
+    .select('id,name,team,role, password, created_at, last_login, status');
+    if(error){
+        return Response.json({users:[]});
+    }
     return Response.json({users:data});
 }
 export async function POST(request){

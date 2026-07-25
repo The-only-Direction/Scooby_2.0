@@ -22,6 +22,15 @@ export default function Dashboard(){
             alert('Error:'+result.error);
         }
     }
+    async function resetPassword(id){
+        const newPassword=Math.random().toString(36).slice(-8);
+        await fetch('/api/users',{
+            method: 'PATCH',
+            headers: {'Content-Type':'application/json'},
+            body:JSON.stringify({id,password:newPassword}),
+        });
+        fetch('/api/users').then(r=>r.json()).then(d=>setUsers(d.users));
+    }
     return(
         <div style={{display: 'flex', minHeight: '100vh'}}> 
         <nav style={{width:'200px', background:'#1e293b', color:'white', padding:'1rem'}}>
@@ -43,12 +52,14 @@ export default function Dashboard(){
                     <table border="1" cellPadding="8">
             <thead>
                 <tr>
-                    <th>Name</th><th>Team</th><th>Role</th><th>Created At</th><th>Last Active</th><th>Work Pending</th><th>Performance</th>
+                    <th>Name</th><th>Team</th><th>Role</th><th>Password</th><th>Actions</th><th>Created At</th><th>Last Active</th><th>Work Pending</th><th>Performance</th>
                 </tr>
                 </thead>
                 <tbody>
                 {users.map(u=>(<tr key={u.id}><td>{u.name}</td>
                 <td>{u.team}</td><td>{u.role}</td>
+                <td>{u.password}</td>
+                <td><button onClick={()=>resetPassword(u.id)}>Reset Password</button></td>
                 <td>{new Date(u.created_at).toLocaleString()}</td>
                 <td>-</td>
                 <td>-</td>
