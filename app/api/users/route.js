@@ -20,4 +20,14 @@ export async function POST(request){
     }
     return Response.json({success:true});
 }
-
+export async function PATCH(request){
+    const{id, ...updates}= await request.json();
+    const{error}=await supabase
+    .from('users')
+    .update(updates)
+    .eq('id',id);
+    if(error){
+        return Response.json({success: false, error:error.message},{status:500});
+    }
+    return Response.json({success:true});
+}
