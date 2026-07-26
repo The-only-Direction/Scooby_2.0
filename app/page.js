@@ -27,7 +27,7 @@ export default function Login() {
 
   return (
     <main style={{padding:'2rem'}}>
-      <h1>Admin Login</h1>
+      <h1>Scooby Login</h1>
       <form onSubmit={handleSubmit}> 
       <input
         type="password"

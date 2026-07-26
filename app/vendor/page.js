@@ -12,7 +12,7 @@ export default function VendorDashboard() {
   return (
     <main style={{ padding: '2rem' }}>
       <h1>Welcome{user ? ', ' + user.name : ''}! 👋</h1>
-      <p>Team {user ? user.team : ''} · Lead Uploader</p>
+      <p>Lead Uploader</p>
 
       <h2 style={{ marginTop: '2rem' }}>Your Assigned Work</h2>
       <p>Your assigned links and documents will appear here.</p>
