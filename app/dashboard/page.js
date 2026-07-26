@@ -40,7 +40,29 @@ export default function Dashboard(){
             <button onClick={()=> setTab('handoff')} style={{display:'block', width:'100%'}}>Handoff</button>
         </nav>
         <main style={{flex:1, padding:'2rem'}}>
-            {tab=='dashboard'&& <h1>Dashboard</h1>}
+            {tab=='dashboard'&&(
+                <div>
+                    <h1>Dashboard</h1>
+                    <div style={{display:'flex', gap:'1rem', marginTop:'1rem', flexWrap:'wrap'}}>
+                        <div style={{padding:'1.5rem', background:'#f1f5f9', borderRadius:'8px', minWidth:'140px'}}>
+                            <div style={{fontSize:'2rem', fontWeight:'bold'}}>{users.filter(u=>u.role==='lead uploader').length}</div>
+                            <div>Total Vendors</div>
+                        </div>
+                        <div style={{padding:'1.5rem', background:'#f1f5f9', borderRadius:'8px', minWidth:'140px'}}>
+                            <div style={{fontSize:'2rem', fontWeight:'bold'}}>0</div>
+                            <div>Total Docs</div>
+                        </div>
+                        <div style={{padding:'1.5rem', background:'#f1f5f9', borderRadius:'8px', minWidth:'140px'}}>
+                            <div style={{fontSize:'2rem', fontWeight:'bold'}}>0</div>
+                            <div>Uploaded</div>
+                        </div>
+                        <div style={{padding:'1.5rem', background:'#f1f5f9', borderRadius:'8px', minWidth:'140px'}}>
+                            <div style={{fontSize:'2rem', fontWeight:'bold'}}>0</div>
+                            <div>Done</div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {tab=='vendors'&&(
                 <div>
                     <h1>Vendors</h1>

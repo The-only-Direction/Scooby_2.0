@@ -3,7 +3,7 @@ export async function POST(request){
     const {password} = await request.json();
     const {data,error} = await supabase
     .from('users')
-    .select('id, name, role')
+    .select('id, name, team, role')
     .eq('password',password)
     .single();
     if (error||!data){

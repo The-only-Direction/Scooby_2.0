@@ -14,7 +14,12 @@ export default function Login() {
     });
     const result =await res.json();
     if(result.success){
-      router.push('/dashboard');;
+      localStorage.setItem('user', JSON.stringify(result.user));
+      if(result.user.role === 'admin'){
+        router.push('/dashboard');
+      }else{
+        router.push('/vendor');
+      }
     }else{
       alert('Wrong Password');
     }

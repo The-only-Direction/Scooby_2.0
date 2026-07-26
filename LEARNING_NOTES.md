@@ -217,6 +217,10 @@ async function handleSubmit(e) {
 | `default now()` on `last_login` | Don't — the login hasn't happened at row creation. Only use `default now()` when *creating the row IS the event* (`created_at`). |
 | Migration shows blank on `remote` | You forgot to type **`Y`** at the `db push` confirmation. Re-run `npx supabase db push` and confirm. |
 | Controlled input frozen (can't type) | `value={x}` with no `onChange` = read-only. Need **both** (see §5). |
+| `.update('updates')` (string) | Passing the *word* `'updates'` instead of the **variable** `updates`. Drop the quotes — variables aren't quoted. |
+| `Cannot read properties of null (reading 'map')` | A query errored → returned `null` → `null.map()` crashes. Guard the API: on `error`, return `{ users: [] }`, not null data (see §17). |
+| `column users.X does not exist` | The code references a column that isn't in the table (e.g. `active` after it became `status`). Check actual columns; keep code + schema in sync. |
+| Variable name mismatch (`update` vs `updates`) | JS needs the **exact same** name in both spots. `update`/`update` works; `update`/`updates` doesn't. |
 
 ---
 
@@ -323,6 +327,148 @@ return (<div> <h1>...</h1> <input/> <button/> </div>);
   ```
 - **`.gitignore`** keeps secrets out — `.env.local` (your keys) and `node_modules` are never uploaded.
 - Commit **often** — small frequent saves beat one giant one. "WIP" in a message = work-in-progress (fine to commit unfinished work as a save point).
+
+---
+
+## 11. CRUD — the four things every app does to data
+
+Almost everything an app does to data is one of **four** operations. Each has an HTTP method and a Supabase call:
+
+| Letter | Operation | HTTP method | Supabase | Example |
+|--------|-----------|-------------|----------|---------|
+| **C** | Create | `POST` | `.insert()` | add a vendor |
+| **R** | Read | `GET` | `.select()` | list vendors |
+| **U** | Update | `PATCH` | `.update()` | reset password, rename |
+| **D** | Delete | `DELETE` | `.delete()` | remove a vendor |
+
+The method names are **conventions** — they signal intent. `GET` = "get info out," `POST` = "post info in," `PATCH` = "change existing," `DELETE` = "remove."
+
+---
+
+## 12. Updating data — the PATCH endpoint pattern
+
+`.update()` changes an **existing** row (vs `.insert()` which adds a new one). You must say **which** row with `.eq()`:
+```js
+await supabase.from('users').update({ password: newPass }).eq('id', id);
+```
+⚠️ **Without `.eq()`, `.update()` changes EVERY row** (same danger as SQL `UPDATE` with no `WHERE`).
+
+### One flexible endpoint via rest destructuring
+```js
+const { id, ...updates } = await request.json();
+await supabase.from('users').update(updates).eq('id', id);
+```
+`const { id, ...updates }` pulls `id` out and gathers **everything else** into `updates`:
+- send `{ id, password }` → `updates = { password }` → resets password
+- send `{ id, name }` → `updates = { name }` → renames
+- send `{ id, status }` → `updates = { status }` → changes status
+
+So **one** PATCH handles all "edit a vendor" actions — it applies whatever fields you send. No need for separate endpoints per field.
+
+---
+
+## 13. `.eq()` and filters — conditions on rows
+
+`.eq('id', 5)` = **"keep only rows where the `id` column equals `5`."** It's a **filter/condition**, like an `if` run on every row:
+```js
+users.filter(row => row.id === 5)   // the JS equivalent
+```
+It maps directly to SQL: `.eq('id', 5)` = `WHERE id = 5`.
+
+**Comparison vs assignment** (two kinds of "equals"):
+- `.eq('id', 5)` → *checks* "is id equal to 5?" (find/match rows)
+- `.update({ active: false })` → *sets* active to false (assign a value)
+
+Other filters: `.gt()` (greater than), `.lt()` (less than), `.neq()` (not equal). Chain them for AND: `.eq('role','lead uploader').eq('status','active')`.
+
+---
+
+## 14. HTTP status codes
+
+Numbers the server sends back to say how a request went. **The first digit is the category:**
+
+| Range | Meaning |
+|-------|---------|
+| **2xx** | ✅ Success (200 OK, 201 Created) |
+| **3xx** | ↪️ Redirect |
+| **4xx** | ❌ **Client** error — *you* sent something wrong (400 Bad Request, 401 Unauthorized, 404 Not Found) |
+| **5xx** | 💥 **Server** error — the server broke (500 Internal Server Error) |
+
+Memory hook: **4 = my fault, 5 = server's fault.** Don't memorize them all — know the categories + a handful (200/401/404/500), look up the rest. In your code: `401` = wrong login, `500` = a DB call failed.
+
+---
+
+## 15. Sending & receiving data — the JSON round trip
+
+Networks carry **text**, not objects. So objects get converted to text to send, and back to objects on arrival.
+
+- **`JSON.stringify(obj)`** → object → text (to send in a request body)
+- **`await request.json()`** / **`res.json()`** → text → object (to read a body/response)
+
+The full round trip:
+```
+SERVER: Response.json({ users: [...] })   → sends text {"users":[...]}
+                                                  │ (over network)
+CLIENT: fetch(...)        → r   (the response)
+        r.json()          → d   (parsed object { users: [...] })
+        d.users           → the array (key must match what the server sent!)
+```
+`r` = **r**esponse, `d` = **d**ata — just nicknames. `d.users` works because the server wrapped it as `{ users: ... }`; **the key must match on both sides.**
+
+### `.then()` chains vs `async/await`
+Same thing, two styles:
+```js
+fetch(url).then(r => r.json()).then(d => setUsers(d.users));  // .then chain
+// same as:
+const r = await fetch(url);
+const d = await r.json();
+setUsers(d.users);
+```
+
+---
+
+## 16. Migrations vs data operations — a key distinction
+
+- **Migration** = change the database's **structure/shape** → new table, new column, constraint. (renovating the house)
+- **insert / update / delete** = change the **data/values** in existing rows → happens at runtime via app code. (moving stuff around inside the house)
+
+**Rule:** new column or table → migration. New/changed *value* in a row → app code, no migration.
+
+---
+
+## 17. Defensive coding — don't trust a query succeeded
+
+Your GET returned `{ users: data }` — but if the query **errors**, `data` is `null`, and the frontend crashes on `null.map()`. Always handle the error:
+```js
+const { data, error } = await supabase.from('users').select(...);
+if (error) return Response.json({ users: [] });   // empty array, never null
+return Response.json({ users: data });
+```
+Now a failed query shows an empty table instead of a crashed page. Assume things can fail; guard for it.
+
+---
+
+## 18. React vs Streamlit/HTML — why it feels harder
+
+- **HTML** = static (no data, no logic).
+- **Streamlit** = hides the machinery (`st.table(df)` secretly fetches, stores, re-runs).
+- **React** = makes you wire it by hand — more code, but full control.
+
+The React pattern for showing any list is always the same three moves:
+> **state (hold) → effect (load) → map (show)**
+```js
+const [users, setUsers] = useState([]);                              // state
+useEffect(() => { fetch(...).then(...).then(setUsers) }, []);        // effect
+{users.map(u => <tr>...</tr>)}                                        // map
+```
+That trio does the same job as Streamlit's one-line `st.table()` — just spelled out. Learn it once; every list/table reuses it.
+
+### Handy patterns you used
+- **Auto team letters:** `String.fromCharCode(65 + count)` — `'A'` is code 65, so `65+1='B'`, etc.
+- **Count rows:** `.select('*', { count: 'exact', head: true })` → returns `count` without fetching rows.
+- **Readable dates:** `new Date(u.created_at).toLocaleString()` — raw timestamp text → local date/time.
+- **Ternary for null:** `u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'` — "if it exists show it, else 'Never'."
+- **Honest placeholders:** show `"Yet to calculate"` for not-yet-built metrics instead of fake numbers.
 
 ---
 
