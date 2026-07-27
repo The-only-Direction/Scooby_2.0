@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 export default function Login() {
   const [password, setPassword] = useState('');
   const router=useRouter();
+
   async function handleSubmit(e){
     e.preventDefault();
     const res=await fetch('/api/login',{
@@ -23,20 +24,23 @@ export default function Login() {
     }else{
       alert('Wrong Password');
     }
-    }
+  }
 
   return (
-    <main style={{padding:'2rem'}}>
-      <h1>Scooby Login</h1>
-      <form onSubmit={handleSubmit}> 
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Enter password"
-        />
-        <button type="submit">Login</button>
-      </form>
-      </main>
+    <main className="auth-page">
+      <div className="auth-card">
+        <h1>🐾 Scooby</h1>
+        <p className="muted" style={{textAlign:'center', marginTop:'-0.5rem'}}>Sign in to continue</p>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password"
+          />
+          <button type="submit" className="btn">Login</button>
+        </form>
+      </div>
+    </main>
   );
 }

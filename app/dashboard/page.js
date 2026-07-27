@@ -1,11 +1,15 @@
 'use client';
 import {useState, useEffect} from 'react';
+import {useRouter} from 'next/navigation';
 export default function Dashboard(){
     const [tab, setTab]=useState('dashboard');
     const [name, setName]=useState('');
     const [users, setUsers]=useState([]);
+    const [selectedTeam, setSelectedTeam] = useState('all');
+    const router=useRouter();
     useEffect(()=>{
-        fetch('/api/users').then(r=>r.json()).then(d=>setUsers(d.users));},[]);
+        fetch('/api/users').then(r=>r.json()).then(d=>setUsers(d.users));
+    },[]);
 
     async function addVendor(){
         const res=await fetch('/api/users',{
@@ -17,11 +21,13 @@ export default function Dashboard(){
         if (result.success){
             alert('Vendor added!');
             setName('');
+            fetch('/api/users').then(r=>r.json()).then(d=>setUsers(d.users));
         }
         else{
             alert('Error:'+result.error);
         }
     }
+
     async function resetPassword(id){
         const newPassword=Math.random().toString(36).slice(-8);
         await fetch('/api/users',{
@@ -31,69 +37,91 @@ export default function Dashboard(){
         });
         fetch('/api/users').then(r=>r.json()).then(d=>setUsers(d.users));
     }
+    function logout(){
+        localStorage.removeItem('user');
+        router.push('/');
+    }
+
+    const vendorCount = users.filter(u=>u.role==='lead uploader').length;
+
     return(
-        <div style={{display: 'flex', minHeight: '100vh'}}> 
-        <nav style={{width:'200px', background:'#1e293b', color:'white', padding:'1rem'}}>
-            <h2 style={{marginBottom:'1.5 rem'}}>Scooby Admin</h2>
-            <button onClick={()=> setTab('dashboard')} style={{display:'block', width:'100%', marginBottom:'0.5rem'}}>Dashboard</button>
-            <button onClick={()=> setTab('vendors')} style={{display:'block', width:'100%', marginBottom:'0.5rem'}}>Vendors</button>
-            <button onClick={()=> setTab('handoff')} style={{display:'block', width:'100%'}}>Handoff</button>
-        </nav>
-        <main style={{flex:1, padding:'2rem'}}>
-            {tab=='dashboard'&&(
-                <div>
-                    <h1>Dashboard</h1>
-                    <div style={{display:'flex', gap:'1rem', marginTop:'1rem', flexWrap:'wrap'}}>
-                        <div style={{padding:'1.5rem', background:'#f1f5f9', borderRadius:'8px', minWidth:'140px'}}>
-                            <div style={{fontSize:'2rem', fontWeight:'bold'}}>{users.filter(u=>u.role==='lead uploader').length}</div>
-                            <div>Total Vendors</div>
-                        </div>
-                        <div style={{padding:'1.5rem', background:'#f1f5f9', borderRadius:'8px', minWidth:'140px'}}>
-                            <div style={{fontSize:'2rem', fontWeight:'bold'}}>0</div>
-                            <div>Total Docs</div>
-                        </div>
-                        <div style={{padding:'1.5rem', background:'#f1f5f9', borderRadius:'8px', minWidth:'140px'}}>
-                            <div style={{fontSize:'2rem', fontWeight:'bold'}}>0</div>
-                            <div>Uploaded</div>
-                        </div>
-                        <div style={{padding:'1.5rem', background:'#f1f5f9', borderRadius:'8px', minWidth:'140px'}}>
-                            <div style={{fontSize:'2rem', fontWeight:'bold'}}>0</div>
-                            <div>Done</div>
+        <div className="layout">
+            <nav className="sidebar">
+                <div className="brand">🐾 Scooby Admin</div>
+                <button className={"nav-btn" + (tab==='dashboard'?' active':'')} onClick={()=>setTab('dashboard')}>Dashboard</button>
+                <button className={"nav-btn" + (tab==='vendors'?' active':'')} onClick={()=>setTab('vendors')}>Vendors</button>
+                <button className={"nav-btn" + (tab==='handoff'?' active':'')} onClick={()=>setTab('handoff')}>Handoff</button>
+                <button className="nav-btn" onClick={logout} style={{marginTop:'auto'}}>Logout</button>
+            </nav>
+
+            <main className="main">
+                {tab==='dashboard' && (
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p className="subtitle">An overview of your vendors and their work.</p>
+                        <div className="stats">
+                            <div className="stat-card">
+                                <div className="stat-num accent">{vendorCount}</div>
+                                <div className="stat-label">Total Vendors</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-num">0</div>
+                                <div className="stat-label">Total Docs</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-num">0</div>
+                                <div className="stat-label">Uploaded</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-num">0</div>
+                                <div className="stat-label">Done</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-            {tab=='vendors'&&(
-                <div>
-                    <h1>Vendors</h1>
-                    <input 
-                    value={name}
-                    onChange={(e)=> setName(e.target.value)}
-                    placeholder="Vendor Name"/>
-                    <button onClick={addVendor}>Add Vendor</button>
-                    <table border="1" cellPadding="8">
-            <thead>
-                <tr>
-                    <th>Name</th><th>Team</th><th>Role</th><th>Password</th><th>Actions</th><th>Created At</th><th>Last Active</th><th>Work Pending</th><th>Performance</th>
-                </tr>
-                </thead>
-                <tbody>
-                {users.map(u=>(<tr key={u.id}><td>{u.name}</td>
-                <td>{u.team}</td><td>{u.role}</td>
-                <td>{u.password}</td>
-                <td><button onClick={()=>resetPassword(u.id)}>Reset Password</button></td>
-                <td>{new Date(u.created_at).toLocaleString()}</td>
-                <td>-</td>
-                <td>-</td>
-                <td>New</td></tr>))}
-            </tbody>
-        </table>
-                </div>
-            )}
-            {tab=='handoff'&& <h1>Handoff</h1>}
+                )}
 
-        
-        </main>
+                {tab==='vendors' && (
+                    <div>
+                        <h1>Vendors</h1>
+                        <p className="subtitle">Create and manage your lead uploaders.</p>
+                        <div className="toolbar">
+                            <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="Vendor name" />
+                            <button className="btn" onClick={addVendor}>Add Vendor</button>
+                        </div>
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th><th>Team</th><th>Role</th><th>Password</th><th>Actions</th><th>Created At</th><th>Last Active</th><th>Work Pending</th><th>Performance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.map(u=>(
+                                        <tr key={u.id}>
+                                            <td>{u.name}</td>
+                                            <td>{u.team}</td>
+                                            <td>{u.role}</td>
+                                            <td>{u.password}</td>
+                                            <td><button className="btn btn-sm btn-ghost" onClick={()=>resetPassword(u.id)}>Reset</button></td>
+                                            <td>{new Date(u.created_at).toLocaleString()}</td>
+                                            <td className="muted">—</td>
+                                            <td className="muted">Yet to calculate</td>
+                                            <td className="muted">New</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {tab==='handoff' && (
+                    <div>
+                        <h1>Handoff</h1>
+                        <p className="subtitle">Assign Apollo links and documents to vendors — coming next.</p>
+                    </div>
+                )}
+            </main>
         </div>
     );
 }
