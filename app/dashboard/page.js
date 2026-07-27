@@ -12,6 +12,10 @@ export default function Dashboard(){
     },[]);
 
     async function addVendor(){
+        if(!name.trim()){
+            alert('Please enter a name');
+            return;
+        }
         const res=await fetch('/api/users',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
@@ -27,7 +31,14 @@ export default function Dashboard(){
             alert('Error:'+result.error);
         }
     }
-
+    async function deactivate(id){
+        await fetch('/api/users',{
+            method:'PATCH',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({id, status:'deactivated'}),
+        });
+        fetch('/api/users').then(r=>r.json()).then(d=>setUsers(d.users));
+    }
     async function resetPassword(id){
         const newPassword=Math.random().toString(36).slice(-8);
         await fetch('/api/users',{
@@ -97,13 +108,14 @@ export default function Dashboard(){
                                 </thead>
                                 <tbody>
                                     {users.map(u=>(
-                                        <tr key={u.id}>
+                                        <tr key={u.id} style={u.status === 'deactivated' ? {opacity: 0.4} : {}}>
                                             <td>{u.name}</td>
                                             <td>{u.team}</td>
                                             <td>{u.role}</td>
                                             <td>{u.password}</td>
                                             <td><button className="btn btn-sm btn-ghost" onClick={()=>resetPassword(u.id)}>Reset</button></td>
                                             <td>{new Date(u.created_at).toLocaleString()}</td>
+                                            <td><button className="btn btn-sm btn-ghost" onClick={()=>deactivate(u.id)}>Deactivate</button></td>
                                             <td className="muted">—</td>
                                             <td className="muted">Yet to calculate</td>
                                             <td className="muted">New</td>

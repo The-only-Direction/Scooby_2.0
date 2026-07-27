@@ -102,7 +102,12 @@ tbody tr:last-child td { border-bottom: none; }
 .muted { color: var(--text-muted); }
 
 /* ---- Auth (login) ---- */
-.auth-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+.auth-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; 
+  background:
+  linear-gradient(-45deg, #4338ca, #7c3aed, #0f172a, #6366f1);
+  background-size:400% 400%;
+  animation: gradientMove 8s linear infinite;
+}
 .auth-card {
   background: var(--surface); border: 1px solid var(--border);
   padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 380px;
@@ -122,3 +127,10 @@ tbody tr:last-child td { border-bottom: none; }
   border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem;
 }
 .panel h2 { margin-bottom: 0.5rem; }
+
+
+@keyframes gradientMove{
+  0%   {background-position: 0% 50%;}
+  50%  {background-position: 100% 50%;}
+  100% {background-position: 0% 50%;}
+}
