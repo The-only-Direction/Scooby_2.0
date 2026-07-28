@@ -30,6 +30,29 @@ export default function Dashboard(){
         if (result.success){alert('Work assigned'); setAssignLink(''); fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));}
         else {alert('Error: ' + result.error);}
     }
+    async function autoAssign(){
+        if(!assignLink.startsWith('http')){ alert('Please paste a valid link'); return; }
+        const vendors=users.filter(u=>u.role==='lead uploader' && u.status!=='deactivated');
+        if(vendors.length===0){ alert('No active vendors'); return; }
+        const withLoad=vendors.map(v=>({
+            vendor:v,
+            load:assignments.filter(a=>a.vendor_id===v.id && a.status!=='completed').length
+        }));
+        withLoad.sort((a,b)=>a.load-b.load);
+        const chosen=withLoad[0];
+        const res=await fetch('/api/assignments',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({vendor_id:chosen.vendor.id, link:assignLink}),
+        });
+        const result=await res.json();
+        if(result.success){
+            alert(`Auto-assigned to ${chosen.vendor.name} (had ${chosen.load} active tasks)`);
+            setAssignLink('');
+            fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));
+        }
+        else{ alert('Error: ' + result.error); }
+    }
     async function deleteAssignment(id){
         await fetch('/api/assignments',{
             method:'DELETE',
@@ -167,7 +190,9 @@ export default function Dashboard(){
                                 <input value={assignLink} onChange={(e)=>setAssignLink(e.target.value)}
                                 placeholder="Paste the link."/>
                                 <button className="btn" onClick={assignWork}>Assign</button>
+                                <button className="btn" onClick={autoAssign}>Auto-Assign</button>
                                 </div>
+
                         <div className="table-wrap" style={{marginTop:'1.5rem'}}>
                             <table>
                                 <thead>
