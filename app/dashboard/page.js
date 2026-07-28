@@ -9,18 +9,34 @@ export default function Dashboard(){
     const router=useRouter();
     const [assignVendor, setAssignVendor]=useState('');
     const [assignLink, setAssignLink]=useState('');
+    const [assignments, setAssignments]=useState([]);
+    const vendorCount=users.filter(u=>u.role==='lead uploader' && u.status!=='deactivated').length;
+    const totalDocs=assignments.length;
+    const inProgressCount=assignments.filter(a=>a.status==='in_progress').length;
+    const doneCount=assignments.filter(a=>a.status==='completed').length;
     useEffect(()=>{
         fetch('/api/users').then(r=>r.json()).then(d=>setUsers(d.users));
+        fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));
     },[]);
     async function assignWork(){
+        if(!assignVendor){ alert('Select a vendor'); return; }
+        if(!assignLink.startsWith('http')){ alert('Please paste a valid link'); return; }
         const res=await fetch('/api/assignments',{
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({vendor_id:assignVendor, link:assignLink}),
         });
         const result=await res.json();
-        if (result.success){alert('Work assigned'); setAssignLink('');}
+        if (result.success){alert('Work assigned'); setAssignLink(''); fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));}
         else {alert('Error: ' + result.error);}
+    }
+    async function deleteAssignment(id){
+        await fetch('/api/assignments',{
+            method:'DELETE',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({id}),
+        });
+        fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));
     }
     async function addVendor(){
         if(!name.trim()){
@@ -64,8 +80,6 @@ export default function Dashboard(){
         router.push('/');
     }
 
-    const vendorCount = users.filter(u=>u.role==='lead uploader').length;
-
     return(
         <div className="layout">
             <nav className="sidebar">
@@ -87,15 +101,15 @@ export default function Dashboard(){
                                 <div className="stat-label">Total Vendors</div>
                             </div>
                             <div className="stat-card">
-                                <div className="stat-num">0</div>
+                                <div className="stat-num">{totalDocs}</div>
                                 <div className="stat-label">Total Docs</div>
                             </div>
                             <div className="stat-card">
-                                <div className="stat-num">0</div>
-                                <div className="stat-label">Uploaded</div>
+                                <div className="stat-num">{inProgressCount}</div>
+                                <div className="stat-label">In Progress</div>
                             </div>
                             <div className="stat-card">
-                                <div className="stat-num">0</div>
+                                <div className="stat-num">{doneCount}</div>
                                 <div className="stat-label">Done</div>
                             </div>
                         </div>
@@ -152,10 +166,25 @@ export default function Dashboard(){
                                 </select>
                                 <input value={assignLink} onChange={(e)=>setAssignLink(e.target.value)}
                                 placeholder="Paste the link."/>
-                                if(!assignVendor){alert ('Select a vendor'), return;}
-                                if(!assignLink.startsWith('http')){alert('Please paste a valid link'), return;}
                                 <button className="btn" onClick={assignWork}>Assign</button>
                                 </div>
+                        <div className="table-wrap" style={{marginTop:'1.5rem'}}>
+                            <table>
+                                <thead>
+                                    <tr><th>Vendor</th><th>Link</th><th>Status</th><th>Actions</th></tr>
+                                </thead>
+                                <tbody>
+                                    {assignments.map(a=>(
+                                        <tr key={a.id}>
+                                            <td>{users.find(u=>u.id===a.vendor_id)?.name || a.vendor_id}</td>
+                                            <td className="muted" style={{maxWidth:'320px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{a.link}</td>
+                                            <td><span className="badge">{a.status}</span></td>
+                                            <td><button className="btn btn-sm btn-ghost" onClick={()=>deleteAssignment(a.id)}>Delete</button></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </main>

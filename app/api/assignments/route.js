@@ -16,3 +16,21 @@ export async function GET(){
     }
     return Response.json({assignments:data});
 }
+
+export async function PATCH(request){
+    const{id, status}=await request.json();
+    const{error}=await supabase.from('assignments').update({status}).eq('id',id);
+    if(error){
+        return Response.json({success:false, error:error.message}, {status:500});   
+    }
+    return Response.json({success:true});
+}
+
+export async function DELETE(request){
+    const {id}=await request.json();
+    const {error}=await supabase.from('assignments').delete().eq('id',id);
+    if(error){
+        return Response.json({success:false, error:error.message}, {status:500});
+    }
+    return Response.json({success:true});
+}
