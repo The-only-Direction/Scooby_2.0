@@ -24,3 +24,12 @@ export async function POST(request){
 
     return Response.json({ success: true, fileUrl: data.publicUrl });
 }
+
+async function uploadFile(id,file){
+    if(!file)return;
+    const formData=new FormData();
+    formData.append('file',file);
+    formData.append('assignmentId',id);
+    await fetch('/api/upload', {method:'POST', body:formData});
+    fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));
+}

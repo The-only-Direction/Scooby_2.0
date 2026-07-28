@@ -17,6 +17,14 @@ export default function VendorDashboard() {
     localStorage.removeItem('user');
     router.push('/');
   }
+  async function uploadFile(id,file){
+    if(!file) return;
+    const formData=new FormData();
+    formData.append('file',file);
+    formData.append('assignmentId',id);
+    await fetch('/api/upload', {method:'POST', body:formData});
+    fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));
+  }
   async function updateStatus(id, status){
     await fetch('/api/assignments',{
       method:'PATCH',
@@ -56,6 +64,9 @@ export default function VendorDashboard() {
                   <option value="in_progress">In Progress</option>
                   <option value="completed">Completed</option>
                 </select>
+                <input type="file" onChange={(e)=>uploadFile(a.id, e.target.files[0])} style={{marginTop:'0.6rem'}}/>
+                {a.file_url && <a href={a.file_url} target="_blank" rel="noopener noreferrer" style=
+                {{display:'block', marginTop:'0.4rem'}}>View Uploaded File</a>}
               </div>
             </div>
           ))}

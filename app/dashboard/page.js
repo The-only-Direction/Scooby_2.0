@@ -171,7 +171,7 @@ export default function Dashboard(){
                         <div className="table-wrap" style={{marginTop:'1.5rem'}}>
                             <table>
                                 <thead>
-                                    <tr><th>Vendor</th><th>Link</th><th>Status</th><th>Actions</th></tr>
+                                    <tr><th>Vendor</th><th>Link</th><th>Status</th><th>File</th><th>Actions</th></tr>
                                 </thead>
                                 <tbody>
                                     {assignments.map(a=>(
@@ -179,6 +179,7 @@ export default function Dashboard(){
                                             <td>{users.find(u=>u.id===a.vendor_id)?.name || a.vendor_id}</td>
                                             <td className="muted" style={{maxWidth:'320px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{a.link}</td>
                                             <td><span className="badge">{a.status}</span></td>
+                                            <td>{a.file_url ? <a href={a.file_url} target="_blank" rel="noopener noreferrer">Download</a> : '—'}</td>
                                             <td><button className="btn btn-sm btn-ghost" onClick={()=>deleteAssignment(a.id)}>Delete</button></td>
                                         </tr>
                                     ))}
