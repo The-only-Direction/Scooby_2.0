@@ -1,9 +1,10 @@
 import {supabase} from '@/lib/supabase';
 export async function POST(request){
-    const {password} = await request.json();
+    const {username,    password} = await request.json();
     const {data,error} = await supabase
     .from('users')
-    .select('id, name, team, role')
+    .select('id, name, team, role, status')
+    .eq('username', username)
     .eq('password',password)
     .single();
     if (error||!data){
