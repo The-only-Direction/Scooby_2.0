@@ -10,5 +10,8 @@ export async function POST(request){
     if (error||!data){
         return Response.json({'success':false}, {'status':401});
     }
+    if(data.status==='deactivated'){
+        return Response.json({success:false, error:'Account Deactivated'}, {status:403});
+    }
     return Response.json({'success':true,'user':data});
 }

@@ -2,7 +2,7 @@ import {supabase} from '@/lib/supabase';
 export async function GET(request){
     const {data,error}=await supabase
     .from('users')
-    .select('id,name,team,role, password, created_at, last_login, status');
+    .select('id,name,team,username, role, password, created_at, last_login, status');
     if(error){
         return Response.json({users:[]});
     }
@@ -10,6 +10,7 @@ export async function GET(request){
 }
 export async function POST(request){
     const{name} = await request.json();
+    const username= name.trim().toLowerCase().replace(/\s+/g,'')+ Math.floor(Math.random()*1000);
     const password= Math.random().toString(36).slice(-8);
     const {count} = await supabase
     .from('users')
@@ -17,7 +18,7 @@ export async function POST(request){
     const team= String.fromCharCode(65+count);
     const {error}= await supabase
     .from('users')
-    .insert({name, team, role:'lead uploader', password});
+    .insert({name, team, username, role:'lead uploader', password});
     if (error){
         return Response.json({success:false, error:error.message},{status:500});
     }

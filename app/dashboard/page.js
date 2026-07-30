@@ -151,7 +151,7 @@ export default function Dashboard(){
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Name</th><th>Team</th><th>Role</th><th>Password</th><th>Actions</th><th>Created At</th><th>Last Active</th><th>Work Pending</th><th>Performance</th>
+                                        <th>Name</th><th>Team</th><th>Username</th><th>Role</th><th>Password</th><th>Actions</th><th>Created At</th><th>Last Active</th><th>Work Pending</th><th>Performance</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -159,6 +159,7 @@ export default function Dashboard(){
                                         <tr key={u.id} style={u.status === 'deactivated' ? {opacity: 0.4} : {}}>
                                             <td>{u.name}</td>
                                             <td>{u.team}</td>
+                                            <td>{u.username}</td>
                                             <td>{u.role}</td>
                                             <td>{u.password}</td>
                                             <td>
