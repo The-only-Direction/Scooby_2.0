@@ -18,8 +18,8 @@ export async function GET(){
 }
 
 export async function PATCH(request){
-    const{id, status}=await request.json();
-    const{error}=await supabase.from('assignments').update({status}).eq('id',id);
+    const{id, ...updates}=await request.json();
+    const{error}=await supabase.from('assignments').update(updates).eq('id',id);
     if(error){
         return Response.json({success:false, error:error.message}, {status:500});   
     }

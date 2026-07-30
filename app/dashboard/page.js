@@ -10,6 +10,7 @@ export default function Dashboard(){
     const [assignVendor, setAssignVendor]=useState('');
     const [assignLink, setAssignLink]=useState('');
     const [assignments, setAssignments]=useState([]);
+    const [maxLoad, setMaxLoad]=useState(3);
     const vendorCount=users.filter(u=>u.role==='lead uploader' && u.status!=='deactivated').length;
     const totalDocs=assignments.length;
     const inProgressCount=assignments.filter(a=>a.status==='in_progress').length;
@@ -40,18 +41,29 @@ export default function Dashboard(){
         }));
         withLoad.sort((a,b)=>a.load-b.load);
         const chosen=withLoad[0];
-        const res=await fetch('/api/assignments',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({vendor_id:chosen.vendor.id, link:assignLink}),
-        });
-        const result=await res.json();
-        if(result.success){
-            alert(`Auto-assigned to ${chosen.vendor.name} (had ${chosen.load} active tasks)`);
-            setAssignLink('');
-            fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));
+        if(chosen.load>=maxLoad){
+            await fetch('/api/assignments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({link:assignLink})});
+            alert('All vendors at capacity — added to queue');
         }
-        else{ alert('Error: ' + result.error); }
+        else{
+            await fetch('/api/assignments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vendor_id:chosen.vendor.id, link:assignLink})});
+            alert(`Auto-assigned to ${chosen.vendor.name} (had ${chosen.load} tasks)`);
+        }
+        setAssignLink('');
+        fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));
+    }
+    async function releaseFromQueue(){
+        const queued = assignments.filter(a => a.vendor_id === null);
+        if(queued.length === 0){ alert('Queue is empty'); return; }
+        const vendors = users.filter(u=>u.role==='lead uploader' && u.status!=='deactivated');
+        const withLoad = vendors.map(v=>({ vendor:v, load: assignments.filter(a=>a.vendor_id===v.id && a.status!=='completed').length }));
+        withLoad.sort((a,b)=>a.load-b.load);
+        const chosen = withLoad[0];
+        if(!chosen || chosen.load >= maxLoad){ alert('No vendor under capacity yet'); return; }
+        const item = queued[0];
+        await fetch('/api/assignments',{ method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: item.id, vendor_id: chosen.vendor.id }) });
+        alert(`Released to ${chosen.vendor.name}`);
+        fetch('/api/assignments').then(r=>r.json()).then(d=>setAssignments(d.assignments));
     }
     async function deleteAssignment(id){
         await fetch('/api/assignments',{
@@ -192,7 +204,13 @@ export default function Dashboard(){
                                 placeholder="Paste the link."/>
                                 <button className="btn" onClick={assignWork}>Assign</button>
                                 <button className="btn" onClick={autoAssign}>Auto-Assign</button>
+                                <label style={{color:'var(--text-muted)', fontSize:'0.9rem', marginLeft:'0.5rem'}}>
+                                    Max per vendor:
+                                    <input type="number" min="1" value={maxLoad} onChange={(e)=>setMaxLoad(Number(e.target.value))} style={{width:'60px', marginLeft:'0.5rem'}} />
+                                </label>
                                 </div>
+                                <h2 style={{marginTop:'1.5rem'}}>Queue({assignments.filter(a=>a.vendor_id===null).length})</h2>
+                                <button className="btn" onClick ={releaseFromQueue}>Release next from queue</button>
 
                         <div className="table-wrap" style={{marginTop:'1.5rem'}}>
                             <table>
