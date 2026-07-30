@@ -197,7 +197,7 @@ export default function Dashboard(){
                         <div className="toolbar">
                             <select value={assignVendor} onChange={(e)=>setAssignVendor(e.target.value)}>
                             <option value="">Select Vendor</option>
-                            {users.filter(u=>u.role==='lead uploader').map(u=>(
+                            {users.filter(u=>u.role==='lead uploader' && u.status!=='deactivated').map(u=>(
                                 <option key={u.id} value={u.id}>{u.name} (Team{u.team})</option>))}
                                 </select>
                                 <input value={assignLink} onChange={(e)=>setAssignLink(e.target.value)}
